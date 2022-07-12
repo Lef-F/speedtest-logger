@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
     parser = ArgumentParser()
     parser.add_argument(
-        "--db_path",
+        "--db-path",
         help="Path to your SQLite database file. Gets created if it does not exist.",
         required=True,
     )
