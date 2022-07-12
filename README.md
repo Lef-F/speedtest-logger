@@ -2,13 +2,45 @@
 
 Wanna log your internet speed smoothly over time?
 
-No worries, with the help of Python, [`speedtest-cli`](https://github.com/sivel/speedtest-cli) and SQLite you can run the following Python script in e.g. a `cronjob` and store the resuts one row at a time in the `speedtest` table of your `speedtest.db`.
+No worries, with the help of Python, [`speedtest-cli`](https://github.com/sivel/speedtest-cli) and SQLite you can run the following Python script in e.g. a `cronjob` and store the results one row at a time in the `speedtest` table of your `speedtest.db`.
 
 Every time you execute `speedtest.py` it will add a new row to your `speedtest` table in your SQLite database.
 
 ```shell
-python3 run_speedtest.py --db-path /path/to/my/speedtest.db --speedtest-exec-path /path/to/my/speedtest-cli/executable
+python3 run_speedtest.py --db-path /path/to/my/speedtest.db
 ```
+
+## Setup
+
+There are two main ways to setup the logger.
+
+### Just git clone
+
+Simply recursively clone this repository into whatever you wish to run it in e.g. the device, VM, container, parallel dimension etc.
+
+The `speedtest-cli` repository that we depend on is a submodule of this repository.
+
+```shell
+git clone --recursive git@github.com:Lef-F/speedtest-logger.git
+```
+
+### Install as Python module
+
+The application comes with `poetry` support and a `pyprojec.toml` which means you have a few options for installation.
+
+#### The poetik way
+
+First clone the repository:
+
+```shell
+git clone git@github.com:Lef-F/speedtest-logger.git
+```
+
+And then run `poetry install` to install the environment.
+
+#### Using `pip`
+
+Simply run `pip install -r requirements.txt`
 
 ## General notes
 
