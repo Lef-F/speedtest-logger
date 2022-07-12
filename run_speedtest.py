@@ -96,7 +96,7 @@ def flatten_dict(d, parent_key="", sep="_"):
 
 
 def main(db_path: str):
-    print("Beginning speed test...")
+    print(f"{datetime.now()} - Starting speedtest...")
     results = run_speedtest()
 
     print("Fixing some data...")
