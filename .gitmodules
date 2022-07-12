@@ -1,4 +1,4 @@
 [submodule "speedtest-cli"]
 	path = speedtest-cli
-	url = git@github.com:sivel/speedtest-cli.git
+	url = https://github.com/sivel/speedtest-cli.git
 	branch = 22210ca35228f0bbcef75a7c14587c4ecb875ab4
