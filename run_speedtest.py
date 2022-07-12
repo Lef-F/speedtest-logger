@@ -1,6 +1,14 @@
 from sqlite3 import connect
-from subprocess import check_output
-# from speedtest import Speedtest
+import importlib
+from pprint import pprint
+from datetime import datetime
+from config import COLUMN_TYPES
+
+try:
+    import speedtest
+except ImportError:
+    speedtest = importlib.import_module("speedtest-cli.speedtest")
+
 
 def run_speedtest(
     secure: bool = True,
@@ -11,6 +19,8 @@ def run_speedtest(
 
     Arguments:
     ----------
+        secure: bool
+            Whether to use a secure connection or not. Default is True.
         servers: list
             List of servers to test against. If None, a list of
             servers will be chosen based on who's the best by latency.
@@ -22,7 +32,7 @@ def run_speedtest(
     if not isinstance(servers, list):
         servers = []
 
-    s = Speedtest(secure=secure)
+    s = speedtest.Speedtest(secure=secure)
     s.get_servers(servers)
     s.get_best_server()
     s.download(threads=threads)
@@ -31,73 +41,89 @@ def run_speedtest(
 
     return s.results.dict()
 
+
 def create_table(db_name, table_name):
     db = connect(db_name)
     c = db.cursor()
     c.execute(
         f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            server_id NUM
-            , sponsor TEXT
-            , server_name TEXT
-            , timestamp TEXT NOT NULL
-            , distance REAL
-            , ping REAL NOT NULL
-            , download REAL NOT NULL
-            , upload REAL NOT NULL
-            , share TEXT
-            , ip_address TEXT
+            {
+                ','.join(
+                    [
+                        k + ' ' + v 
+                        for k, v in COLUMN_TYPES.items()
+                    ]
+                )
+            }
         )
         """
     )
     db.commit()
     db.close()
 
+
 def insert_into_db(db_name, table_name, data):
     db = connect(db_name)
     c = db.cursor()
-    print(f'inserting to table {table_name} the following data: {data}')
+    print(f"inserting to table {table_name} the following data:")
+    pprint(data)
+
+    insert_query = f"""
+        INSERT INTO {table_name}
+        ({','.join(data.keys())})
+        VALUES ({'?, ' * (len(COLUMN_TYPES) - 1)} ?)
+    """
 
     c.execute(
-        f"""
-        INSERT INTO {table_name}
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        data
+        insert_query,
+        list(data.values()),
     )
     db.commit()
     db.close()
 
-def main(speedtest_exec_path: str, db_path: str):
-    print('Beginning speed test...')
 
-    # TODO: use the speedtest library to run the speedtest instead of a subprocess shell call
-    # results = run_speedtest()
+def flatten_dict(d, parent_key="", sep="_"):
+    # GitHub Copilot was here
+    items = []
+    for k, v in d.items():
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_dict(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
 
-    speed_check = check_output([speedtest_exec_path, '--csv','--secure'])
-    speed_check = speed_check.decode('utf-8').strip()
-    speed_check = speed_check.split(',')
 
-    print('Creating database...')
-    create_table(db_path, 'speedtest')
+def main(db_path: str):
+    print("Beginning speed test...")
+    results = run_speedtest()
 
-    print('Inserting data into database...')
-    insert_into_db(db_path, 'speedtest', speed_check)
+    print("Fixing some data...")
+    # convert timestamp to seconds since unix time
+    results["timestamp"] = results["timestamp"].replace("Z", "+00:00")
+    results["timestamp"] = datetime.fromisoformat(results["timestamp"])
+    results["timestamp"] = int(results["timestamp"].timestamp())
 
-if __name__ == '__main__':
+    results = flatten_dict(results)
+
+    print("Creating database...")
+    create_table(db_path, "speedtest")
+
+    print("Inserting data into database...")
+    insert_into_db(db_path, "speedtest", results)
+
+
+if __name__ == "__main__":
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
     parser.add_argument(
-        '--db_path',
-        help='Path to your SQLite database file. Gets created if it does not exist.',
-        required=True,
-    )
-    parser.add_argument(
-        '--speedtest_exec_path',
-        help='Path to your speedtest-cli executable.',
+        "--db_path",
+        help="Path to your SQLite database file. Gets created if it does not exist.",
         required=True,
     )
     args = parser.parse_args()
 
-    main(args.speedtest_exec_path, args.db_path)
+    main(args.db_path)
+    print("SUCCESS! Tested and logged your internet speed! 🚀")
