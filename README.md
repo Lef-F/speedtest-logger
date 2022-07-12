@@ -10,6 +10,20 @@ Every time you execute `speedtest.py` it will add a new row to your `speedtest` 
 python3 run_speedtest.py --db-path /path/to/my/speedtest.db
 ```
 
+## My use-case
+
+As an example, I'm running this every 10 minutes on my Raspberry Pi 4 at home using `cron` as follows:
+
+```shell
+*/10 * * * * ( cd /home/pi/speedtest-logger/ && python3 run_speedtest.py --db-path /opt/grafana/speedtest.db >> /home/pi/speedtest-logger/speedtest.log 2>&1 )
+```
+
+I'm wrapping the script in `()` so that it runs in a subshell.
+This way I can `cd` into the directory where I cloned this repo.
+And if the `cd` succeeds (`&&`) then `run_speedtest.py` runs and reports all its output (errors included `2>&1`) to a `speedtest.log` file, which I can check in case things are not working as expected.
+
+---
+
 ## Setup
 
 There are two main ways to setup the logger.
